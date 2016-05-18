@@ -12,20 +12,24 @@
 #  express or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-require "bundler/gem_tasks"
+module Fluent
+  module KinesisHelper
+    module Initialize
+      def start
+        super
+        require 'ruby-prof'
+        RubyProf.measure_mode = RubyProf::CPU_TIME
+        RubyProf.start
+      end
 
-require 'rake/testtask'
-
-task default: [:test]
-Rake::TestTask.new do |test|
-  test.libs << 'lib' << 'test'
-  test.test_files = FileList['test/**/test_*.rb']
-  test.options = '-v'
+      def shutdown
+        super
+        result = RubyProf.stop
+        file = File.join('profile', ENV["TYPE"]+".profile")
+        File.open(file, 'w') { |f|
+          RubyProf::FlatPrinter.new(result).print(f)
+        }
+      end
+    end
+  end
 end
-
-load 'kinesis_producer/tasks/binary.rake'
-
-Rake::Task[:build].enhance [:binaries]
-Rake::Task[:test].enhance [:binaries]
-
-load 'profile/task.rake'

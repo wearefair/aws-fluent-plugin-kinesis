@@ -12,20 +12,32 @@
 #  express or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-require "bundler/gem_tasks"
-
-require 'rake/testtask'
-
-task default: [:test]
-Rake::TestTask.new do |test|
-  test.libs << 'lib' << 'test'
-  test.test_files = FileList['test/**/test_*.rb']
-  test.options = '-v'
+task :profile do
+  conf = profile_conf(ENV["TYPE"])
+  pid = spawn("bundle exec fluentd -i '#{conf}' -c profile/dummy.conf -r ./profile/enable")
+  sleep 5
+  Process.kill("TERM", pid)
+  Process.wait
 end
 
-load 'kinesis_producer/tasks/binary.rake'
+def profile_conf(type)
+  conf = <<-EOS
+<source>
+  @type dummy
+  tag dummy
+  rate 500
+</source>
 
-Rake::Task[:build].enhance [:binaries]
-Rake::Task[:test].enhance [:binaries]
+<match dummy>
+  @type kinesis_#{type}
+  flush_interval 1
+  buffer_chunk_limit 1m
+  try_flush_interval 0.1
+  queued_chunk_flush_interval 0.01
 
-load 'profile/task.rake'
+  region ap-northeast-1
+  stream_name fluent-plugin-test
+</match>
+  EOS
+  conf
+end
