@@ -23,6 +23,7 @@ module Fluent
           require 'aws-sdk'
           require 'fluent/plugin/kinesis_helper/format'
           require 'fluent/plugin/kinesis_helper/client'
+          require 'fluent/plugin/kinesis_helper/credential_provider_chain'
           require 'fluent/plugin/kinesis_helper/credentials'
           include Format, Client, Credentials
 

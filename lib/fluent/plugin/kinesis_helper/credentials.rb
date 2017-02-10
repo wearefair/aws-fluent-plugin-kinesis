@@ -38,9 +38,12 @@ module Fluent
       private
 
       def default_credentials_provider
-        config_class = Struct.new(:access_key_id, :secret_access_key, :region, :session_token, :profile, :instance_profile_credentials_retries, :instance_profile_credentials_timeout)
-        config = config_class.new(@aws_key_id, @aws_sec_key, @region)
-        provider = Aws::CredentialProviderChain.new(config).resolve
+        config_class = Struct.new(:access_key_id, :secret_access_key, :region, :session_token, :profile, :instance_profile_credentials_retries, :instance_profile_credentials_timeout, :instance_profile_credentials_ip_address, :instance_profile_credentials_port)
+        config = config_class.new(@aws_key_id, @aws_sec_key, @region,
+                                  nil, nil, nil, nil,
+                                  ENV["AWS_INSTANCE_PROFILE_IP_ADDRESS"],
+                                  ENV.has_key?("AWS_INSTANCE_PROFILE_PORT") ? Integer(ENV["AWS_INSTANCE_PROFILE_PORT"]) : nil)
+        provider = Fluent::KinesisHelper::CredentialProviderChain.new(config).resolve
         if provider.nil?
           raise Fluent::ConfigError, "You must specify credentials on ~/.aws/credentials, environment variables or instance profile for default credentials"
         end
